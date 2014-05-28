@@ -493,10 +493,6 @@ namespace Essence_graphics
                             #region write value
                             exp = exp * (neg ? -1 : 1);
                             value = value * Math.Pow(10, exp - dimmer) * (neg && !isExp ? -1 : 1);
-                            if (value > 2500 || value < 2200)
-                            {
-                                MessageBox.Show("shit");
-                            }
                             for (int i = 0; i < mult; i++)
                             {
                                 zcorn[x, y, z] = value;
