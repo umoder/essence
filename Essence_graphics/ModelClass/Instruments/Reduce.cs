@@ -310,6 +310,7 @@ namespace Essence_graphics
                             }
                         #endregion
                     }
+                    CL.Clear();
                 }
                 CL = null;
             }

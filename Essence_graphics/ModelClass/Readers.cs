@@ -123,7 +123,7 @@ namespace Essence_graphics
             }
             result.Enqueue(readed);
             return result.ToArray();
-            return null;
+            //return null;
         }
         /*private static string[] Splitter(string str)
         {
