@@ -18,8 +18,14 @@ namespace Essence_graphics
         /// </summary>
         public BackgroundWorker BW_Reader = new BackgroundWorker();
 
-        public void BWReadDataFileComplited(object sender, RunWorkerCompletedEventArgs e)
+        public void BWReadDataFileCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            //MF.Model = this;
+            //BW_Reader.ReportProgress(100, "Completed");
+            
+            actnum.CheckNTGPORO();
+            actnum.Reset();
+
             MF.UpdatePropsList();
 
             MF.glc_intersectionI.Enabled = true;
@@ -30,6 +36,7 @@ namespace Essence_graphics
             MF.glc_intersectionJ.Visible = true;
             MF.glc_map.Visible = true;
 
+            //MF.glc_map
             MF.SetupViewport(ref MF.glc_map);
             MF.SetupViewport(ref MF.glc_intersectionI);
             MF.SetupViewport(ref MF.glc_intersectionJ);
@@ -61,17 +68,76 @@ namespace Essence_graphics
         /// <returns></returns>
         private static string[] Splitter(string str)
         {
+            if (str == "") return null;
+            str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ").Trim().ToLower(); // replace all multi-spaces and tabs with a single-space
+
+            if (str.IndexOf("--") == 0) return null; // all comments
+
+            if (str.IndexOf("--") > 0)
+                str = str.Substring(0, str.IndexOf("--")).Trim(); // cut comments
+
+            Queue<string> result = new Queue<string>();
+
+            if (str.IndexOf(' ') == -1 && str.IndexOf('/') == -1) // single-word
+            {
+                result.Enqueue(str);
+                return result.ToArray();
+            }
+
+            bool read = true;
+            bool noBreak = false;
+            string readed = string.Empty;
+            
+            for (int i = 0; i < str.Length; i++) // split to words
+            {
+                if (str[i] == '\'') // 'xxx' flag
+                {
+                    if (!noBreak)
+                        noBreak = true;
+                    else
+                        noBreak = false;
+                    continue;
+                }
+
+                if (str[i] == ' ' && !noBreak)
+                {
+                    result.Enqueue(readed);
+                    readed = string.Empty;
+                    continue;
+                }
+
+                if (str[i] == '/' && !noBreak)
+                    if (readed != "")
+                    {
+                        result.Enqueue(readed);
+                        result.Enqueue("/");
+                        return result.ToArray();
+                    }
+                    else
+                    {
+                        result.Enqueue("/");
+                        return result.ToArray();
+                    }
+
+                readed = readed + str[i];
+            }
+            result.Enqueue(readed);
+            return result.ToArray();
+            return null;
+        }
+        /*private static string[] Splitter(string str)
+        {
             if (str != "")
             {
                 str = System.Text.RegularExpressions.Regex.Replace(str, @"\s+", " ").Trim().ToLower(); // replace all multi-spaces and tabs with a single-space
                 int i = str.IndexOf("--");
-                if (i == -1) return str.Split(' '); // return the array of substrings
+                if (i == -1) return str.Split(' '); // if no '--' found return all
                 if (i > 0) // cut the commented part
-                    return str.Substring(0, i - 1).Split(' '); 
+                    return str.Substring(0, i - 1).Split(' '); // return the array of substrings
                 return null; // if all is a comment
             }
             return null;
-        }
+        }*/
 
         /// <summary>
         /// Обрабатывает data-файл в поисках нужных данных. В случае ошибки возвращает false.
@@ -87,6 +153,7 @@ namespace Essence_graphics
             string[] splitted;
             bool skip = false;
             bool skipKW = false;
+            byte dimcounter=0;
 
             do
             {
@@ -118,7 +185,7 @@ namespace Essence_graphics
                 }
 
                 if (splitted[0] == "dimens") // set size of model
-                    if (!IsInitialized)
+                    if (dimcounter == 0)
                     {
                         BW_Reader.ReportProgress(0, "Initializing memory");
                         curStr = sr.ReadLine();
@@ -130,11 +197,11 @@ namespace Essence_graphics
                         }
 
                         SetSize(Convert.ToInt32(splitted[0]), Convert.ToInt32(splitted[1]), Convert.ToInt32(splitted[2])); // initializing size of model
-
+                        dimcounter++;
                         skip = true;
 
-                        curStr = sr.ReadLine();
-                        continue;
+                        //curStr = sr.ReadLine();
+                        //continue;
                     }
                     else
                     {
@@ -142,7 +209,11 @@ namespace Essence_graphics
                         return false;
                     }
 
-                
+                if (splitted[0] == "grid" && dimcounter == 0)
+                {
+                    MessageBox.Show("Error. No DIMENS keyword.");
+                    return false;
+                }
 
                 if (splitted[0] == "include") // 
                 {
@@ -155,19 +226,19 @@ namespace Essence_graphics
                         curStr = sr.ReadLine();
                         splitted = Splitter(curStr); // looking for value
                     }
-                    ReadDataFile(filePath + splitted[0].Substring(1, splitted[0].Length - 2));
-                    curStr = sr.ReadLine();
-                    continue;
+                    if (splitted[0][splitted[0].Length - 1] == '/') splitted[0] = splitted[0].Substring(0, splitted[0].Length - 1);
+                    if (splitted[0].Contains("'"))
+                        splitted[0] = splitted[0].Substring(1, splitted[0].Length - 2);
+                    splitted[0] = splitted[0].Replace('/', '\\');
+                    if (splitted[0][0] == '.' && splitted[0][1] != '.')
+                        splitted[0] = splitted[0].Substring(1, splitted[0].Length - 1);
+                    ReadDataFile(filePath + splitted[0]);
+                    //curStr = sr.ReadLine();
+                    //continue;
                 }
 
                 if (splitted[0] == "coord")
                 {
-                    if (!IsInitialized)
-                    {
-                        MessageBox.Show("Error. No DIMENS keyword.");
-                        return false;
-                    }
-
                     //ReadCoord
                     BW_Reader.ReportProgress(0, "Reading COORD");
                     if (!ReadCoord(ref sr))
@@ -175,18 +246,13 @@ namespace Essence_graphics
                         MessageBox.Show("Error in COORD");
                         return false;
                     }
-                    curStr = sr.ReadLine();
-                    continue;
+                    BW_Reader.ReportProgress(100, "Searching...");
+                    //curStr = sr.ReadLine();
+                    //continue;
                 }
 
                 if (splitted[0] == "zcorn")
                 {
-                    if (!IsInitialized)
-                    {
-                        MessageBox.Show("Error. No DIMENS keyword.");
-                        return false;
-                    }
-
                     //ReadZCorn
                     BW_Reader.ReportProgress(0, "Reading ZCORN");
                     if (!ReadZCorn(ref sr))
@@ -194,8 +260,9 @@ namespace Essence_graphics
                         MessageBox.Show("Error in ZCORN");
                         return false;
                     }
-                    curStr = sr.ReadLine();
-                    continue;
+                    BW_Reader.ReportProgress(100, "Searching...");
+                    //curStr = sr.ReadLine();
+                    //continue;
                 }
 
                 if (splitted[0] == "actnum") // actnum reading
@@ -207,6 +274,9 @@ namespace Essence_graphics
                         MessageBox.Show("Error in ACTNUM");
                         return false;
                     }
+                    BW_Reader.ReportProgress(100, "Searching...");
+                    //curStr = sr.ReadLine();
+                    //continue;
                 }
 
                 if (gridsToLook.Contains(splitted[0]))
@@ -218,17 +288,19 @@ namespace Essence_graphics
                         MessageBox.Show("Error in " + splitted[0].ToUpper());
                         //return false;
                     }
-                    curStr = sr.ReadLine();
-                    continue;
+                    BW_Reader.ReportProgress(100, "Searching...");
+                    //curStr = sr.ReadLine();
+                    //continue;
                 }
 
                 curStr = sr.ReadLine();
             }
             while (curStr != null);
 
-            File.Exists(fileName);
+            //File.Exists(fileName);
+            IsInitialized = true;
+            BW_Reader.ReportProgress(100, "Searching...");
 
-            BW_Reader.ReportProgress(100, "Completed");
             return true;
         }
 
@@ -252,7 +324,7 @@ namespace Essence_graphics
             int x = 0, y = 0, z = 0;
             int counter = 0;
             bool done = false;
-
+            long pos = sr.BaseStream.Position;
             curStr = sr.ReadLine();
             splitted = Splitter(curStr);
             while (splitted == null)
@@ -291,20 +363,25 @@ namespace Essence_graphics
                         {
                             counter = 0;
                             z++;
-                            if (z > 1) { z = 0; x++; }
-                            if (x > NI) 
-                            { 
-                                x = 0; 
-                                y++;
-                                BW_Reader.ReportProgress((int)(y * 100 / NJ));
+                            if (z > 1)
+                            {
+                                z = 0;
+                                x++;
+                                if (x > NI)
+                                {
+                                    x = 0;
+                                    y++;
+                                    BW_Reader.ReportProgress((int)(y * 100 / (NJ + 1)));
+                                }
                             }
                         }
                     }
                 }
-                curStr = sr.ReadLine();
-                // if (curStr==null) ERROR!!!
-            } while (!done);
-
+                if (!done) curStr = sr.ReadLine();
+            } while (!done || curStr == null);
+            
+            sr.BaseStream.Position = sr.BaseStream.Position - curStr.Length - 5;
+            
             if (x != 0 || y != NJ + 1)
                 return false;
 
@@ -333,8 +410,8 @@ namespace Essence_graphics
             for (int i = 0; i < NI; i++)
                 for (int j = 0; j < NJ; j++)
                 {
-                    CellSizeI = CellSizeI + Math.Pow(Math.Pow(coord[i + 1, j, 0].X - coord[i, j, 0].X, 2) + Math.Pow(coord[i, j, 0].Y - coord[i + 1, j, 0].Y, 2), 0.5d);
-                    CellSizeJ = CellSizeJ + Math.Pow(Math.Pow(coord[i, j + 1, 0].X - coord[i, j, 0].X, 2) + Math.Pow(coord[i, j, 0].Y - coord[i, j + 1, 0].Y, 2), 0.5d);
+                    CellSizeI = CellSizeI + Math.Pow(Math.Pow(coord[i + 1, j, 0].X - coord[i, j, 0].X, 2) + Math.Pow(coord[i, j, 0].Y - coord[i + 1, j, 0].Y, 2), 0.5);
+                    CellSizeJ = CellSizeJ + Math.Pow(Math.Pow(coord[i, j + 1, 0].X - coord[i, j, 0].X, 2) + Math.Pow(coord[i, j, 0].Y - coord[i, j + 1, 0].Y, 2), 0.5);
                 }
             CellSizeI = CellSizeI / NI / NJ;
             CellSizeJ = CellSizeJ / NJ / NI;
@@ -358,152 +435,124 @@ namespace Essence_graphics
             int x = 0; int y = 0; int z = 0;
             int dimmer = 0;
             int mult = 1;
+            bool isExp=false;
+            int exp = 0;
             bool skipLine = false;
             char ch;
+            int j;
 
             do
             {
-                num = sr.ReadBlock(buffer, 0, buffLen);
-                for (int j = 0; j < buffLen; j++)
+                num = sr.Read(buffer, 0, buffLen);
+                for (j = 0; j < num; j++)
                 {
                     ch = buffer[j];
-
-                    if (ch == '-' && buffer[j + 1] == '-')
-                        skipLine = true;
-
-                    if (ch == '\n' || ch == '\r')
-                        skipLine = false;
-
+                    switch (ch)
+                    {
+                        case '-':
+                            if ((j + 1 == num ? sr.Peek() : buffer[j + 1]) == '-')
+                                skipLine = true; // comments
+                            else
+                                neg = true; // negative value flag
+                            break;
+                        case '\n':
+                        case '\r':
+                            skipLine = false;
+                            break;
+                    }
+                    
                     if (skipLine)
                         continue;
 
-                    if (ch == '/')
+                    switch (ch)
                     {
-                        done = true;
-                        break;
-                    }
+                        case '/':
+                            done = true;
+                            break;
+                        case '*':
+                            mult = Convert.ToInt32(value * Math.Pow(10, -dimmer));
+                            value = double.NaN;
+                            dimmer = 0;
+                            point = false;
+                            break;
+                        case '.':
+                            point = true;
+                            break;
+                        case 'E':
+                        case 'e':
+                            isExp = true;
+                            value = value * (neg ? -1 : 1);
+                            neg = false;
+                            break;
+                        case ' ':
+                        case '\t':
+                        case '\n':
+                        case '\r':
+                            if (double.IsNaN(value)) continue;
 
-                    if ((ch == ' ' || ch == '\n' || ch == '\r') && double.IsNaN(value))
-                        continue;
-
-                    if (ch == ' ' || ch == '\n' || ch == '\r')
-                    {
-                        //val write
-                        value = value * Math.Pow(0.1, dimmer);
-                        for (int i = 0; i < mult; i++)
-                        {
-                            zcorn[x, y, z] = value * (neg ? -1 : 1);
-                            x++;
-                            if (x == NI * 2) { x = 0; y++; }
-                            if (y == NJ * 2)
+                            #region write value
+                            exp = exp * (neg ? -1 : 1);
+                            value = value * Math.Pow(10, exp - dimmer) * (neg && !isExp ? -1 : 1);
+                            if (value > 2500 || value < 2200)
                             {
-                                y = 0;
-                                z++;
-                                BW_Reader.ReportProgress(z * 100 / NK / 2);
+                                MessageBox.Show("shit");
                             }
-                        }
-                        mult = 1;
-                        value = double.NaN;
-                        point = false;
-                        dimmer = 0;
-                        neg = false;
-                        continue;
-                    }
+                            for (int i = 0; i < mult; i++)
+                            {
+                                zcorn[x, y, z] = value;
+                                x++;
+                                if (x == NI * 2)
+                                {
+                                    x = 0;
+                                    y++;
+                                    if (y == NJ * 2)
+                                    {
+                                        y = 0;
+                                        z++;
+                                        if (z == NK * 2) done = true; // 
+                                        BW_Reader.ReportProgress(z * 100 / NK / 2);
+                                    }
+                                }
+                            }
+                            mult = 1;
+                            exp = 0;
+                            isExp = false;
+                            value = double.NaN;
+                            point = false;
+                            dimmer = 0;
+                            neg = false;
+                            #endregion
 
-                    if (ch == '-')
-                    {
-                        neg = true;
-                        continue;
-                    }
+                            break;
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                            if (isExp)
+                            {
+                                exp = exp * 10 + ch - 48;
+                                break;
+                            }
 
-                    if (ch == '*')
-                    {
-                        mult = Convert.ToInt32(value);
-                        value = 0;
-                        dimmer = 0;
-                        point = false;
-                        continue;
+                            if (double.IsNaN(value)) value = 0;
+                            value = value * 10 + ch - 48;
+                            if (point)
+                                dimmer++;
+                            break;
                     }
-
-                    if (ch == '.')
-                    {
-                        point = true;
-                        continue;
-                    }
-
-                    if (double.IsNaN(value)) value = 0;
-                    value = value * 10 + ch - 48;
-                    if (point)
-                        dimmer++;
+                    if (done) break;
                 }
-            } while (!done && num == buffLen);
+            } while (!done);
+
+            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
             if (x != 0 || y != 0 || z != NK * 2) return false; else return true;
         }
-        /*public bool ReadZCorn(StreamReader sr)
-        {
-            string curStr;
-            string[] splitted;
-            int x = 0, y = 0, z = 0;
-            bool done = false;
-            double value;
-            int counter;
-
-            curStr = sr.ReadLine();
-            splitted = Splitter(curStr);
-            while (splitted == null)
-            {
-                curStr = sr.ReadLine();
-                splitted = Splitter(curStr);
-            }
-
-            do
-            {
-                splitted = Splitter(curStr);
-                foreach (string str in splitted)
-                {
-                    if (str == "/")
-                    {
-                        done = true;
-                        break;
-                    }
-
-                    if (str.Contains("*"))
-                    {
-                        counter = Convert.ToInt32(str.Split('*')[0]);
-                        value = Convert.ToDouble(str.Split('*')[1]);
-                        for (int i = 0; i < counter; i++)
-                        {
-                            zcorn[x, y, z] = value;
-                            x++;
-                            if (x == NI * 2) { x = 0; y++; }
-                            if (y == NJ * 2) 
-                            { 
-                                y = 0; 
-                                z++;
-                                BW_Reader.ReportProgress((int)(z * 100 / NK));
-                            }
-                        }
-                    }
-                    else
-                    {
-                        zcorn[x, y, z] = Convert.ToDouble(str);
-                        x++;
-                        if (x == NI * 2) { x = 0; y++; }
-                        if (y == NJ * 2) 
-                        {
-                            y = 0; 
-                            z++;
-                            BW_Reader.ReportProgress((int)(z * 100 / NK / 2));
-                        }
-                    }
-                }
-                curStr = sr.ReadLine();
-            } while (!done);
-            if (x != 0 || y != 0 || z != NK * 2)
-                return false;
-            else
-                return true;
-        }*/
 
         /// <summary>
         /// Метод считывания куба ACTNUM
@@ -523,87 +572,104 @@ namespace Essence_graphics
             int mult = 1;
             bool skipLine = false;
             char ch;
+            int j;
 
             do
             {
                 num = sr.ReadBlock(buffer, 0, buffLen);
-                for (int j = 0; j < buffLen; j++)
+                for (j = 0; j < num; j++)
                 {
                     ch = buffer[j];
-
-                    if (ch == '-' && buffer[j + 1] == '-')
-                        skipLine = true;
-
-                    if (ch == '\n' || ch == '\r')
-                        skipLine = false;
+                    switch (ch)
+                    {
+                        case '-':
+                            if ((j+1 == num ? sr.Peek() : buffer[j + 1]) == '-')
+                                skipLine = true; // comments
+                            //else
+                                //neg = true; // negative value flag
+                            break;
+                        case '\n':
+                        case '\r':
+                            skipLine = false;
+                            break;
+                    }
 
                     if (skipLine)
                         continue;
 
-                    if ((ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') && double.IsNaN(value))
-                        continue;
-
-                    if (ch == '/')
+                    switch (ch)
                     {
-                        done = true;
-                        break;
-                    }
+                        case '/':
+                            done = true;
+                            break;
+                        case '*':
+                            mult = Convert.ToInt32(value);
+                            value = 0;
+                            dimmer = 0;
+                            point = false;
+                            break;
+                        case '.':
+                            point = true;
+                            break;
+                        case ' ':
+                        case '\t':
+                        case '\n':
+                        case '\r':
+                            if (double.IsNaN(value)) continue;
 
-                    if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t')
-                    {
-                        //val write
-                        value = value * Math.Pow(0.1, dimmer);
-                        for (int i = 0; i < mult; i++)
-                        {
-                            actnum[x, y, z] = Convert.ToByte(value);
-                            x++;
-                            if (x == NI)
+                            #region write value
+                            value = value * Math.Pow(0.1, dimmer);
+                            for (int i = 0; i < mult; i++)
                             {
-                                x = 0;
-                                y++;
+                                actnum[x, y, z] = Convert.ToByte(value);
+                                x++;
+                                if (x == NI)
+                                {
+                                    x = 0;
+                                    y++;
+                                    if (y == NJ)
+                                    {
+                                        y = 0;
+                                        z++;
+                                        BW_Reader.ReportProgress(z * 100 / NK / 2);
+                                    }
+                                }
                             }
-                            if (y == NJ)
-                            {
-                                y = 0;
-                                z++;
-                                BW_Reader.ReportProgress(z * 100 / NK);
-                            }
-                        }
-                        mult = 1;
-                        value = double.NaN;
-                        point = false;
-                        dimmer = 0;
-                        continue;
-                    }
+                            mult = 1;
+                            value = double.NaN;
+                            point = false;
+                            dimmer = 0;
+                            #endregion
 
-                    if (ch == '*')
-                    {
-                        mult = Convert.ToInt32(value);
-                        value = double.NaN;
-                        dimmer = 0;
-                        point = false;
-                        continue;
+                            break;
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                            if (double.IsNaN(value)) value = 0;
+                            value = value * 10 + ch - 48;
+                            if (point)
+                                dimmer++;
+                            break;
                     }
-
-                    if (ch == '.')
-                    {
-                        point = true;
-                        continue;
-                    }
-
-                    if (double.IsNaN(value)) value = 0;
-                    value = value * 10 + ch - 48;
-                    if (point)
-                        dimmer++;
+                    if (done) break;
                 }
-            } while (!done && num == buffLen);
+            } while (!done);
+
+            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
 
             if (x != 0 || y != 0 || z != NK)
             {
                 MessageBox.Show("Error in ACTNUM");
                 return false;
             }
-            actnum.Reset();
+            
             return true;
         }
 
@@ -628,17 +694,6 @@ namespace Essence_graphics
                 prop.Maps[N].Value = new double[NI, NJ];
             }
 
-            string curStr;
-            string[] splitted;
-            //int x = 0, y = 0, z = 0;
-            //int counter = 0;
-            //double value = 0;
-            //int[,] c = new int[NI, NJ];
-            //double[,] sum = new double[NI, NJ];
-            //bool done = false;
-
-            //curStr = sr.ReadLine();
-
             int buffLen = 512 * 1024;
             char[] buffer = new char[buffLen];
             int num = 0;
@@ -651,143 +706,122 @@ namespace Essence_graphics
             int mult = 1;
             bool skipLine = false;
             char ch;
+            int j;
+            int exp = 0;
+            bool isExp = false;
 
             do
             {
                 num = sr.ReadBlock(buffer, 0, buffLen);
-                for (int j = 0; j < buffLen; j++)
+                for (j = 0; j < num; j++)
                 {
                     ch = buffer[j];
-
-                    if (ch == '-' && buffer[j + 1] == '-')
-                        skipLine = true;
-
-                    if (ch == '\n' || ch == '\r')
-                        skipLine = false;
+                    switch (ch)
+                    {
+                        case '-':
+                            if ((j+1 == num ? sr.Peek() : buffer[j + 1]) == '-')
+                                skipLine = true; // comments
+                            else
+                                neg = true; // negative value flag
+                            break;
+                        case '\n':
+                        case '\r':
+                            skipLine = false;
+                            break;
+                    }
 
                     if (skipLine)
                         continue;
 
-                    if ((ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r') && double.IsNaN(value))
-                        continue;
-
-                    if (ch == '/')
+                    switch (ch)
                     {
-                        done = true;
-                        break;
-                    }
+                        case '/':
+                            done = true;
+                            break;
+                        case '*':
+                            mult = Convert.ToInt32(value);
+                            value = 0;
+                            dimmer = 0;
+                            point = false;
+                            break;
+                        case '.':
+                            point = true;
+                            break;
+                        case 'E':
+                        case 'e':
+                            isExp = true;
+                            value = value * (neg ? -1 : 1);
+                            neg = false;
+                            break;
+                        case ' ':
+                        case '\t':
+                        case '\n':
+                        case '\r':
+                            if (double.IsNaN(value)) continue;
 
-                    if (ch == ' ' || ch == '\n' || ch == '\r' || ch == '\t')
-                    {
-                        //val write
-                        value = value * Math.Pow(0.1, dimmer);
-                        //if (value < prop.ValueMin) prop.ValueMin = value;
-                        //if (value > prop.ValueMax) prop.ValueMax = value;
-                        for (int i = 0; i < mult; i++)
-                        {
-                            prop.Value[x, y, z] = value * (neg ? -1 : 1);
-                            prop.Mult[x, y, z] = 1;
-                            x++;
-                            if (x == NI) 
-                            { 
-                                x = 0; 
-                                y++; 
-                            }
-                            if (y == NJ)
+                            #region write value
+                            value = value * Math.Pow(10, exp - dimmer) ;
+                            for (int i = 0; i < mult; i++)
                             {
-                                y = 0;
-                                z++;
-                                BW_Reader.ReportProgress(z * 100 / NK);
+                                prop.Value[x, y, z] = value ;
+                                x++;
+                                if (x == NI)
+                                {
+                                    x = 0;
+                                    y++;
+                                    if (y == NJ)
+                                    {
+                                        y = 0;
+                                        z++;
+                                        BW_Reader.ReportProgress(z * 100 / NK / 2);
+                                    }
+                                }
                             }
-                        }
-                        mult = 1;
-                        value = double.NaN;
-                        point = false;
-                        dimmer = 0;
-                        neg = false;
-                        continue;
-                    }
+                            mult = 1;
+                            exp = 0;
+                            isExp = false;
+                            value = double.NaN;
+                            point = false;
+                            dimmer = 0;
+                            neg = false;
+                            #endregion
 
-                    if (ch == '-')
-                    {
-                        neg = true;
-                        continue;
-                    }
-
-                    if (ch == '*')
-                    {
-                        mult = Convert.ToInt32(value);
-                        value = double.NaN;
-                        dimmer = 0;
-                        point = false;
-                        continue;
-                    }
-
-                    if (ch == '.')
-                    {
-                        point = true;
-                        continue;
-                    }
-
-                    if (double.IsNaN(value)) value = 0;
-                    value = value * 10 + ch - 48;
-                    if (point)
-                        dimmer++;
-                }
-            } while (!done && num == buffLen);
-
-            #region old
-            //----------------------------------------------------
-            /*while (Splitter(curStr) == null)
-            {
-                curStr = sr.ReadLine();
-            }
-
-            do
-            {
-                splitted = curStr.Split(' ', '\t');
-                foreach (string str in splitted)
-                {
-                    if (str == "/")
-                    {
-                        done = true; break;
-                    }
-                    if (str != "")
-                    {
-                        if (str.Contains("*"))
-                        {
-                            counter = Convert.ToInt32(str.Split('*')[0]);
-                            value = Convert.ToDouble(str.Split('*')[1]);
-                        }
-                        else { counter = 1; value = Convert.ToDouble(str); }
-
-                        for (int i = 0; i < counter; i++)
-                        {
-                            if (value != 0) { c[x, y]++; sum[x, y] = sum[x, y] + value; }
-                            prop.Value[x, y, z] = value;
-                            prop.Mult[x, y, z] = 1f;
-                            if (value < prop.ValueMin) prop.ValueMin = value;
-                            if (value > prop.ValueMax) prop.ValueMax = value;
-                            x++;
-                            if (x == NI) { y++; x = 0; }
-                            if (y == NJ)
+                            break;
+                        case '0':
+                        case '1':
+                        case '2':
+                        case '3':
+                        case '4':
+                        case '5':
+                        case '6':
+                        case '7':
+                        case '8':
+                        case '9':
+                            if (isExp)
                             {
-                                z++;
-                                y = 0;
-                                BW_Reader.ReportProgress(z * 100 / NK);
+                                exp = exp * 10 + (ch - 48) * (neg ? -1 : 1);
+                                break;
                             }
-                        }
+
+                            if (double.IsNaN(value)) value = 0;
+                            value = value * 10 + ch - 48;
+                            if (point)
+                                dimmer++;
+                            break;
                     }
+
+                    if (done) break;
                 }
-                curStr = sr.ReadLine();
-            } while (!done);*/
-            #endregion
+            } while (!done);
+
             //----------------------------------------------------
             if (x != 0 || y != 0 || z != NK)
             {
                 MessageBox.Show("Error in " + Name);
                 return false;
             }
+
+            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
 
             if (Props == null)
                 Props = new List<DProperty>();
@@ -798,91 +832,6 @@ namespace Essence_graphics
 
             return true;
         }
-        /*public bool ReadDProperty(string Name, ref StreamReader sr)
-        {
-            DProperty prop = new DProperty();
-            //Props[Num] = new DProperty();
-            prop.Name = Name;
-            prop.Value = new double[NI, NJ, NK];
-            prop.Mult = new float[NI, NJ, NK];
-            prop.Add = new float[NI, NJ, NK];
-            prop.Maps = new Map[4];
-            for (int N = 0; N < 4; N++)
-            {
-                prop.Maps[N] = new Map();
-                prop.Maps[N].Value = new double[NI, NJ];
-            }
-
-            string curStr;
-            string[] splitted;
-            int x = 0, y = 0, z = 0;
-            int counter = 0;
-            double value = 0;
-            int[,] c = new int[NI, NJ];
-            double[,] sum = new double[NI, NJ];
-            bool done = false;
-
-            curStr = sr.ReadLine();
-
-            while (Splitter(curStr) == null)
-            {
-                curStr = sr.ReadLine();
-            }
-
-            do
-            {
-                splitted = curStr.Split(' ', '\t');
-                foreach (string str in splitted)
-                {
-                    if (str == "/")
-                    {
-                        done = true; break;
-                    }
-                    if (str != "")
-                    {
-                        if (str.Contains("*"))
-                        {
-                            counter = Convert.ToInt32(str.Split('*')[0]);
-                            value = Convert.ToDouble(str.Split('*')[1]);
-                        }
-                        else { counter = 1; value = Convert.ToDouble(str); }
-
-                        for (int i = 0; i < counter; i++)
-                        {
-                            if (value != 0) { c[x, y]++; sum[x, y] = sum[x, y] + value; }
-                            prop.Value[x, y, z] = value;
-                            prop.Mult[x, y, z] = 1f;
-                            if (value < prop.ValueMin) prop.ValueMin = value;
-                            if (value > prop.ValueMax) prop.ValueMax = value;
-                            x++;
-                            if (x == NI) { y++; x = 0; }
-                            if (y == NJ) 
-                            { 
-                                z++; 
-                                y = 0;
-                                BW_Reader.ReportProgress((int)(z * 100 / NK));
-                            }
-                        }
-                    }
-                }
-                curStr = sr.ReadLine();
-            } while (!done);
-
-            if (x != 0 || y != 0 || z != NK)
-            {
-                MessageBox.Show("Error in " + Name);
-                return false;
-            }
-
-            if (Props == null)
-                Props = new List<DProperty>();
-            Props.Capacity = Props.Capacity + 1;
-            Props.Add(prop);
-
-            RecalculateValues();
-
-            return true;
-        }*/
 
         /// <summary>
         /// Считывает WELSPECS для определения скважин и COMPDAT для задания конекшенов
@@ -920,7 +869,11 @@ namespace Essence_graphics
                         curStr = sr.ReadLine();
                         splitted = Splitter(curStr); // looking for value
                     }
-                    StreamReader subsr=new StreamReader(filePath + splitted[0].Substring(1, splitted[0].Length - 2));
+                    if (splitted[0][splitted[0].Length - 1] == '/') splitted[0] = splitted[0].Substring(0, splitted[0].Length - 1);
+                    if (splitted[0].Contains("'"))
+                        splitted[0] = splitted[0].Substring(1, splitted[0].Length - 2);
+                    splitted[0] = splitted[0].Replace('/', '\\');
+                    StreamReader subsr = new StreamReader(filePath + splitted[0]);
                     ReadSchedule(ref subsr, filePath);
                     subsr.Dispose();
                     curStr = sr.ReadLine();
@@ -1019,7 +972,7 @@ namespace Essence_graphics
 
             PaintI = true;
 
-            IsInitialized = true;
+            //IsInitialized = true;
 
             Cell = new CCell(this);
             Bulleye = new CBulleye(this);

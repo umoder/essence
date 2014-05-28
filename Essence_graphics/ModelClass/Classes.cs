@@ -162,12 +162,14 @@ namespace Essence_graphics
 
         public class CActnum
         {
+            bool isFound = false;
             private byte[] _actnum_ini;
             private byte[] _actnum_ed;
             private CModel parent;
             private int NI;
             private int NJ;
             private int NK;
+            
             public CActnum(int NI, int NJ, int NK, object sender)
             {
                 this.parent = (CModel)sender;
@@ -175,8 +177,14 @@ namespace Essence_graphics
                 this.NJ = NJ;
                 this.NK = NK;
                 _actnum_ini = new byte[NI * NJ * NK];
+                for (int i = 0; i < NI; i++)
+                    for (int j = 0; j < NJ; j++)
+                        for (int k = 0; k < NK; k++)
+                            this[i, j, k] = 1;
                 _actnum_ed = new byte[NI * NJ * NK];
+                Reset();
             }
+
             public byte this[int i, int j, int k]
             {
                 get 
@@ -191,9 +199,51 @@ namespace Essence_graphics
                         _actnum_ed[i + j * NI + k * NI * NJ] = value;
                 }
             }
+            
             public void Reset()
             {
                 _actnum_ini.CopyTo(_actnum_ed, 0);
+            }
+
+            public void CheckNTGPORO()
+            {
+                int ntg=-1;
+                int poro=-1;
+
+                if (parent.Props!=null)
+                    for (int i = 0; i < parent.Props.Count; i++)
+                    {
+                        if (parent.Props[i].Name == "NTG")
+                            ntg = i;
+                        if (parent.Props[i].Name == "PORO")
+                            poro = i;
+                    }
+
+                if (ntg!=-1 && poro!=-1)
+                    if (parent.Edited)
+                    {
+                        for (int i = 0; i < NI; i++)
+                            for (int j = 0; j < NJ; j++)
+                                for (int k = 0; k < NK; k++)
+                                    if (this[i, j, k] == 1)
+                                    {
+                                        double val = (parent.Props[ntg].Value[i, j, k] * parent.Props[ntg].Mult[i, j, k] + parent.Props[ntg].Add[i, j, k]) * (parent.Props[poro].Value[i, j, k] * parent.Props[poro].Mult[i, j, k] + parent.Props[poro].Add[i, j, k]);
+                                        if (val == 0)
+                                            this[i, j, k] = 0;
+                                    }
+                    }
+                    else
+                    {
+                        for (int i = 0; i < NI; i++)
+                            for (int j = 0; j < NJ; j++)
+                                for (int k = 0; k < NK; k++)
+                                    if (this[i, j, k] == 1)
+                                    {
+                                        double val = (parent.Props[ntg].Value[i, j, k]) * (parent.Props[poro].Value[i, j, k]);
+                                        if (val == 0)
+                                            this[i, j, k] = 0;
+                                    }
+                    }
             }
         }
     }

@@ -18,13 +18,29 @@ namespace Essence_graphics
     /// </summary>
     public partial class CModel
     {
-        #region Переменные и классы
-        private Main_Form MF;
-
+        #region Конструктор
         public CModel(object sender)
         {
             MF = (Main_Form)sender;
+
+            checkSetupFile();
+
+            //BackgroundWorkers Setups
+            BW_Reader.WorkerReportsProgress = true;
+            BW_Reader.DoWork += BWReadDataFile;
+            BW_Reader.RunWorkerCompleted += BWReadDataFileCompleted;
+            BW_Reader.ProgressChanged += MF.ReportProgress;
+
+            BW_RecalculateValues.WorkerSupportsCancellation = true;
+            BW_RecalculateValues.WorkerReportsProgress = true;
+            BW_RecalculateValues.DoWork += RecalculateValues;
+            BW_RecalculateValues.ProgressChanged += MF.ReportProgress;
+            BW_RecalculateValues.RunWorkerCompleted += BW_RecalculateValuesCompleted;
         }
+        #endregion
+
+        #region Переменные и классы
+        private Main_Form MF;
 
         public CCell Cell;
         public CBulleye Bulleye;
@@ -165,6 +181,7 @@ namespace Essence_graphics
         private int _CurrentProperty = 0;
         /// <summary>
         /// Поле текущего выбранного свойства.
+        /// При изменении обновляет массивы цветовых параметров карты и разреза.
         /// </summary>
         public int CurrentProperty
         {
@@ -257,15 +274,15 @@ namespace Essence_graphics
         /// <returns></returns>
         private Vector3 HSVtoRGB(Single H)
         {
-            H = 300 - H * 300;
-            Single s = 1;
-            Single v = 1;
+            H = 300.0f - H * 300.0f;
+            Single s = 1.0f;
+            Single v = 1.0f;
             Single c = s * v;
             Single hd = H / 60.0f;
-            Single x = (float)(c * (1 - Math.Abs(hd - Math.Truncate(hd * 0.5) * 2 - 1)));
+            Single x = (float)(c * (1.0f - Math.Abs(hd - Math.Truncate(hd / 2.0f) * 2.0f - 1.0f)));
             Single m = c - v;
 
-            Single r = 0, g = 0, b = 0;
+            Single r = 0.0f, g = 0.0f, b = 0.0f;
 
             if (hd < 1.0f && hd >= 0.0f)
             {
@@ -579,6 +596,9 @@ namespace Essence_graphics
 
                 curStr = sr.ReadLine();
             }
+
+            sr.Dispose();
+            fs.Dispose();
 
             return true;
         }

@@ -16,11 +16,9 @@ namespace Essence_graphics
         {
             if (BW_RecalculateValues.IsBusy)
             {
+                BW_RecalculateValues.CancelAsync();
                 while (BW_RecalculateValues.IsBusy)
-                {
-                    BW_RecalculateValues.CancelAsync();
                     System.Threading.Thread.Sleep(50);
-                }
             }
             BW_RecalculateValues.RunWorkerAsync();
         }
@@ -103,15 +101,15 @@ namespace Essence_graphics
 
             if (Props[CurrentProperty].ValueMin == Props[CurrentProperty].ValueMax)
             {
-                Props[CurrentProperty].ValueMin = Props[CurrentProperty].ValueMin * 0.9;
-                Props[CurrentProperty].ValueMax = Props[CurrentProperty].ValueMax * 1.1;
+                Props[CurrentProperty].ValueMin = Props[CurrentProperty].ValueMin - 0.1;
+                Props[CurrentProperty].ValueMax = Props[CurrentProperty].ValueMax + 0.1;
             }
 
             for (int i = 0; i < 4; i++)
                 if (Props[CurrentProperty].Maps[i].Min == Props[CurrentProperty].Maps[i].Max)
                 {
-                    Props[CurrentProperty].Maps[i].Min = Props[CurrentProperty].Maps[i].Min * 0.9;
-                    Props[CurrentProperty].Maps[i].Max = Props[CurrentProperty].Maps[i].Max * 1.1;
+                    Props[CurrentProperty].Maps[i].Min = Props[CurrentProperty].Maps[i].Min - 0.1;
+                    Props[CurrentProperty].Maps[i].Max = Props[CurrentProperty].Maps[i].Max + 0.1;
                 }
 
             double d1 = 1 / (Props[CurrentProperty].Maps[CurrentMapType].Max - Props[CurrentProperty].Maps[CurrentMapType].Min);

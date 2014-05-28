@@ -17,7 +17,7 @@ namespace Essence_graphics
     public partial class Main_Form : Form
     {
         #region Переменные
-        CModel Model;
+        public CModel Model;
 
         public BackgroundWorker BW_ProcessNodes = new BackgroundWorker();
 
@@ -129,9 +129,8 @@ namespace Essence_graphics
         public Main_Form()
         {
             Model = new CModel(this);
-            InitializeComponent();
 
-            Model.checkSetupFile();
+            InitializeComponent();
 
             glc_intersectionI.Enabled = false;
             glc_intersectionJ.Enabled = false;
@@ -140,18 +139,6 @@ namespace Essence_graphics
             glc_intersectionI.Visible = false;
             glc_intersectionJ.Visible = false;
             glc_map.Visible = false;
-
-            //BackgroundWorkers Setups
-            Model.BW_Reader.WorkerReportsProgress = true;
-            Model.BW_Reader.DoWork += Model.BWReadDataFile;
-            Model.BW_Reader.RunWorkerCompleted += Model.BWReadDataFileComplited;
-            Model.BW_Reader.ProgressChanged += ReportProgress;
-
-            Model.BW_RecalculateValues.WorkerSupportsCancellation = true;
-            Model.BW_RecalculateValues.WorkerReportsProgress = true;
-            Model.BW_RecalculateValues.DoWork += Model.RecalculateValues;
-            Model.BW_RecalculateValues.ProgressChanged += ReportProgress;
-            Model.BW_RecalculateValues.RunWorkerCompleted += Model.BW_RecalculateValuesCompleted;
 
             BW_ProcessNodes.WorkerSupportsCancellation = true;
             BW_ProcessNodes.DoWork += BW_ProcessNodesEntryPoint;
@@ -912,59 +899,26 @@ namespace Essence_graphics
         {
             if (openFileDialog1.ShowDialog() == DialogResult.OK)
             {
+                // TODO model.dispose?
+                TV_boxes.SelectedNodes = null;
+                TV_boxes.Nodes.Clear();
+                TV_Props.Nodes.Clear();
+
+                glc_intersectionI.Enabled = false;
+                glc_intersectionJ.Enabled = false;
+                glc_map.Enabled = false;
+
+                glc_intersectionI.Visible = false;
+                glc_intersectionJ.Visible = false;
+                glc_map.Visible = false;
+
+                Model = new CModel(this);
                 Model.BW_Reader.RunWorkerAsync(openFileDialog1.FileName);
                 EssFile = new FileStream(openFileDialog1.FileName.Substring(0, openFileDialog1.FileName.Length - 5) + ".ess", FileMode.OpenOrCreate, FileAccess.ReadWrite);
                 EssFileRead = new StreamReader(EssFile);
                 ReadEssFile();
                 EssFileRead.Dispose();
             }
-
-            #region Kal4a reading
-            /*bool small = true;
-            if (Model.Props != null) { Model.Props.Clear(); Model.Props.Capacity = 0; }
-            if (Model.Wells != null) { Model.Wells.Clear(); Model.Wells.Capacity = 0; }
-            TV_boxes.Nodes.Clear();
-            if (!small)
-            {
-
-            }
-            else
-            {
-                // Kal4a
-                StatusPBar.Value = 0;
-                Model.SetSize(249, 141, 379);
-                StatusPBar.Value = 20;
-                Model.ReadCoord("kal4a_coord.txt");
-                StatusPBar.Value = 40;
-                Model.ReadZCorn("Grid.inc");
-                StatusPBar.Value = 60;
-                Model.ReadDProperty("PERMX", "PERMX_OUT.inc");
-                StatusPBar.Value = 70;
-                Model.ReadDProperty("SWCR", "SWCR_OUT.inc");
-                StatusPBar.Value = 80;
-                Model.ReadSchedule("CENTER_29012014.sch");
-                State.Text = "Done";
-                StatusPBar.Value = 100;
-                StatusStrip.Invalidate();
-                Model.IsBordered = false;
-            }
-
-            UpdatePropsList();
-
-            UpdateDL_Map();
-            UpdateDL_Inter();
-            UpdateDL_InterJ();
-
-            glc_intersectionI.Visible = true;
-            glc_intersectionJ.Visible = true;
-            glc_map.Visible = true;
-
-            SetupViewport(ref glc_map);
-            SetupViewport(ref glc_intersectionI);
-            SetupViewport(ref glc_intersectionJ);
-
-            Model.Bulleye.New();*/
-            #endregion
         }
 
         /// <summary>
@@ -992,6 +946,7 @@ namespace Essence_graphics
 
         private void ButtonShowGrid_Click(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             Model.IsBordered = !Model.IsBordered;
             UpdateDL_Map();
             UpdateDL_InterI();
@@ -1003,7 +958,7 @@ namespace Essence_graphics
 
         private void ButtonSwitchBack_Click(object sender, EventArgs e)
         {
-            if (!Model.IsInitialized || !_loaded_intI || !_loaded_map) return;
+            if (!Model.IsInitialized) return;
             Model.BlackBack = !Model.BlackBack;
 
             UpdateDL_Map();
@@ -1083,6 +1038,7 @@ namespace Essence_graphics
 
         private void TSButtonPicker_Click(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             TSButtonPicker.Checked = true;
             TSButtonReduce.Checked = false;
             TSButtonRestore.Checked = false;
@@ -1093,6 +1049,7 @@ namespace Essence_graphics
 
         private void TSButtonBullEye_Click(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             if (TSButtonBullEye.Checked == true)
             {
                 TSButtonPicker.Checked = true;
@@ -1114,6 +1071,7 @@ namespace Essence_graphics
 
         private void TSButtonReduce_Click(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             if (TSButtonReduce.Checked == true)
             {
                 TSButtonPicker.Checked = true;
@@ -1134,6 +1092,7 @@ namespace Essence_graphics
 
         private void TSButtonRestore_Click(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             if (TSButtonRestore.Checked == true)
             {
                 TSButtonPicker.Checked = true;
@@ -1405,6 +1364,7 @@ namespace Essence_graphics
 
         private void TV_boxes_AfterSelect(object sender, TreeViewEventArgs e)
         {
+            if (!Model.IsInitialized) return;
             switch (Model.Left(e.Node.Tag.ToString(), 2))
             {
                 case "BE":
@@ -1442,7 +1402,7 @@ namespace Essence_graphics
         /// </summary>
         public void UpdateDL_Map()
         {
-            if (!_loaded_map) return;
+            if (!_loaded_map||!Model.IsInitialized||!glc_map.Enabled) return;
             int x = 0, y = 0;
             GL.NewList(hDLMap, ListMode.Compile);
             #region draw cells
@@ -1489,7 +1449,7 @@ namespace Essence_graphics
                 GL.Color3(Color.Black);
                 GL.LineWidth(4.0f);
                 foreach (CModel.Well well in Model.Wells)
-                    if (well.Connections.Count > 0)
+                    if (well.Connections!=null)
                     {
                         GL.Begin(PrimitiveType.LineStrip);
                         double xw, yw;
@@ -1506,7 +1466,7 @@ namespace Essence_graphics
                 GL.PointSize(8.0f);
                 GL.Begin(PrimitiveType.Points);
                 foreach (CModel.Well well in Model.Wells)
-                    if (well.Connections.Count > 0)
+                    if (well.Connections != null)
                     {
                         double xw, yw;
                         foreach (CModel.Well.Connection con in well.Connections)
@@ -1522,7 +1482,7 @@ namespace Essence_graphics
                 GL.PointSize(4.0f);
                 GL.Begin(PrimitiveType.Points);
                 foreach (CModel.Well well in Model.Wells)
-                    if (well.Connections.Count > 0)
+                    if (well.Connections != null)
                     {
                         double xw, yw;
                         foreach (CModel.Well.Connection con in well.Connections)
@@ -1545,6 +1505,7 @@ namespace Essence_graphics
         /// </summary>
         public void UpdateDL_Cross()
         {
+            if (!_loaded_map || !Model.IsInitialized || !glc_map.Enabled) return;
             GL.NewList(hDLCross, ListMode.Compile);
 
             GL.LineWidth(3);
@@ -1571,6 +1532,7 @@ namespace Essence_graphics
 
         public void UpdateTextMap()
         {
+            if (!_loaded_map || !Model.IsInitialized || !glc_map.Enabled) return;
             if (Model.Wells == null) return;
 
             #region Scale
@@ -1621,7 +1583,7 @@ namespace Essence_graphics
         /// </summary>
         public void UpdateDL_InterI()
         {
-            if (!_loaded_intI) return;
+            if (!_loaded_intI || !Model.IsInitialized || !glc_intersectionI.Enabled) return;
             GL.NewList(hDLInteI, ListMode.Compile);
             #region cells
             GL.Begin(PrimitiveType.Triangles);
@@ -1785,7 +1747,7 @@ namespace Essence_graphics
         /// </summary>
         public void UpdateDL_InterJ()
         {
-            if (!_loaded_intI) return;
+            if (!_loaded_intI || !Model.IsInitialized || !glc_intersectionJ.Enabled) return;
             GL.NewList(hDLInteJ, ListMode.Compile);
             #region cells
             GL.Begin(PrimitiveType.Triangles);
@@ -2319,6 +2281,7 @@ namespace Essence_graphics
 
         private void TV_boxes_DoubleClick(object sender, EventArgs e)
         {
+            if (!Model.IsInitialized) return;
             // TODO Read node, update table and enter the modification mode
             // Works only with Picker-Instrument
             if (mode == 0)
@@ -2370,6 +2333,7 @@ namespace Essence_graphics
                 case Keys.Back:
                 case Keys.Delete:
                 case Keys.OemMinus:
+                case Keys.Subtract:
                 case Keys.Oemplus:
                     e.SuppressKeyPress = false;
                     break;

@@ -90,7 +90,7 @@ namespace Essence_graphics.Windows
                 MessageBox.Show("Wrong string in min-coefficient field");
                 return;
             }
-            if (!double.TryParse(mincoef.Text, out min_))
+            if (!double.TryParse(mincoef.Text, out max_))
             {
                 DialogResult = DialogResult.None;
                 MessageBox.Show("Wrong string in max-coefficient field");
