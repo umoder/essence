@@ -98,8 +98,8 @@ namespace Essence_graphics
         {
             switch (keyData)
             {
-                case Keys.O | Keys.Control:
-
+                case Keys.Escape:
+                    Button_Cancel_Click(null, null);
                     return true;
                 case Keys.F2:
                     renameToolStripMenuItem_Click(TV_boxes, new EventArgs());
@@ -1182,6 +1182,7 @@ namespace Essence_graphics
                     Model.Restore.UpdateTable(dataGridProps);
                     break;
             }
+            Model.actnum.CheckNTGPORO();
             if (mode == 0) BW_ProcessNodes.RunWorkerAsync(); else Model.BW_RecalculateValues.RunWorkerAsync();
             Button_OK.Visible = false;
             Button_Cancel.Visible = false;
@@ -1963,18 +1964,14 @@ namespace Essence_graphics
         private void TV_boxes_AfterCheck(object sender, TreeViewEventArgs e)
         {
             if (BW_ProcessNodes.IsBusy)
-            {
                 BW_ProcessNodes.CancelAsync();
-                while (BW_ProcessNodes.IsBusy)
-                {
-                    System.Threading.Thread.Sleep(50);
-                }
-            }
-            BW_ProcessNodes.RunWorkerAsync();
+            else
+                BW_ProcessNodes.RunWorkerAsync();
         }
 
         private void BW_ProcessNodesComplited(object sender, RunWorkerCompletedEventArgs e)
         {
+            Model.actnum.CheckNTGPORO();
             if (Model.Edited)
                 Model.RecalculateValues();
         }
@@ -1993,10 +1990,13 @@ namespace Essence_graphics
             Model.actnum.Reset();
 
             foreach (TreeNode tn in TV_boxes.Nodes)
-                if (tn.Checked == true) ProcessNodes(tn);
+            {
+                if (e.Cancel) return;
+                if (tn.Checked == true) ProcessNodes(tn, e);
+            }
         }
 
-        private void ProcessNodes(TreeNode tn)
+        private void ProcessNodes(TreeNode tn, DoWorkEventArgs e)
         {
             if (tn.Nodes.Count == 0)
             {
@@ -2018,7 +2018,11 @@ namespace Essence_graphics
             }
             else
                 foreach (TreeNode node in tn.Nodes)
-                    if (node.Checked == true) ProcessNodes(node);
+                    if (node.Checked == true)
+                    {
+                        if (e.Cancel) return;
+                        ProcessNodes(node, e);
+                    }
         }
 
         private void ReadNode(TreeNode tn)

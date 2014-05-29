@@ -15,16 +15,18 @@ namespace Essence_graphics
         public void RecalculateValues()
         {
             if (BW_RecalculateValues.IsBusy)
-            {
                 BW_RecalculateValues.CancelAsync();
-                while (BW_RecalculateValues.IsBusy)
-                    System.Threading.Thread.Sleep(50);
-            }
-            BW_RecalculateValues.RunWorkerAsync();
+            else
+                BW_RecalculateValues.RunWorkerAsync();
         }
 
         public void BW_RecalculateValuesCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
+            if (e.Cancelled)
+            {
+                BW_RecalculateValues.RunWorkerAsync();
+                return;
+            }
             MF.UpdateDL_Map();
             MF.UpdateDL_InterI();
             MF.UpdateDL_InterJ();
@@ -53,6 +55,7 @@ namespace Essence_graphics
             for (int i = 0; i < NI; i++)
                 for (int j = 0; j < NJ; j++)
                 {
+                    if (e.Cancel) return;
                     Props[CurrentProperty].Maps[1].Value[i, j] = double.MaxValue;
                     Props[CurrentProperty].Maps[2].Value[i, j] = double.MinValue;
                     Props[CurrentProperty].Maps[3].Value[i, j] = 0;
@@ -117,6 +120,7 @@ namespace Essence_graphics
             for (int x = 0; x < NI; x++)
                 for (int y = 0; y < NJ; y++)
                 {
+                    if (e.Cancel) return;
                     MapColor[x, y] = Convert.ToSingle((Props[CurrentProperty].Maps[CurrentMapType].Value[x, y] - Props[CurrentProperty].Maps[CurrentMapType].Min) * d1);
                     for (int z = 0; z < NK; z++)
                         InterColor[x, y, z] = Convert.ToSingle((Cell[x, y, z] - Props[CurrentProperty].ValueMin) * d2);

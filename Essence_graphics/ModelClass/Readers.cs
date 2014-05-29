@@ -22,7 +22,7 @@ namespace Essence_graphics
         {
             //MF.Model = this;
             //BW_Reader.ReportProgress(100, "Completed");
-            
+
             actnum.CheckNTGPORO();
             actnum.Reset();
 
@@ -51,8 +51,8 @@ namespace Essence_graphics
             MF.glc_map.Invalidate();
 
             MF.TB_Krange.Text = (KRange[0] + 1) + "-" + (KRange[1] + 1);
-
-            if (MF.TV_boxes.Nodes.Count > 0) MF.BW_ProcessNodes.RunWorkerAsync();
+            
+            MF.BW_ProcessNodes.RunWorkerAsync();
         }
 
         public void BWReadDataFile(object sender, DoWorkEventArgs e)
@@ -425,7 +425,7 @@ namespace Essence_graphics
         /// <param name="fileName"></param>
         public bool ReadZCorn(ref StreamReader sr)
         {
-            int buffLen = 512 * 1024;
+            int buffLen = 4096; // 4 kib
             char[] buffer = new char[buffLen];
             int num = 0;
             bool done = false;
@@ -440,10 +440,10 @@ namespace Essence_graphics
             bool skipLine = false;
             char ch;
             int j;
-
+            long gap = sr.BaseStream.Position % buffLen;
+            num = sr.Read(buffer, 0, buffLen - Convert.ToInt32(gap));
             do
             {
-                num = sr.Read(buffer, 0, buffLen);
                 for (j = 0; j < num; j++)
                 {
                     ch = buffer[j];
@@ -493,6 +493,7 @@ namespace Essence_graphics
                             #region write value
                             exp = exp * (neg ? -1 : 1);
                             value = value * Math.Pow(10, exp - dimmer) * (neg && !isExp ? -1 : 1);
+                            
                             for (int i = 0; i < mult; i++)
                             {
                                 zcorn[x, y, z] = value;
@@ -544,6 +545,8 @@ namespace Essence_graphics
                     }
                     if (done) break;
                 }
+                if (!done) 
+                    num = sr.Read(buffer, 0, buffLen);
             } while (!done);
 
             sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
@@ -885,14 +888,18 @@ namespace Essence_graphics
                         if (well_.Name == splitted[0])
                         {
                             well = well_;
-                            if (well.Connections == null) well.Connections = new List<Well.Connection>();
+                            int ii = Convert.ToInt32(splitted[1]);
+                            int jj = Convert.ToInt32(splitted[2]);
+                            int kk1 = Convert.ToInt32(splitted[3]);
+                            int kk2 = Convert.ToInt32(splitted[4]);
                             foreach (Well.Connection con in well.Connections)
-                                if (con.I == Convert.ToInt32(splitted[1]) && con.J == Convert.ToInt32(splitted[2]) && con.K1 == Convert.ToInt32(splitted[3]) && con.K2 == Convert.ToInt32(splitted[4])) counter++;
+                                if (con.I == ii && con.J == jj && con.K1 == kk1 && con.K2 == kk2) counter++;
                             if (counter == 0)
                             {
-                                well.Connections.Capacity = well.Connections.Capacity + 1;
-                                well.Connections.Add(new Well.Connection(Convert.ToInt32(splitted[1]) - 1, Convert.ToInt32(splitted[2]) - 1, Convert.ToInt32(splitted[3]) - 1, Convert.ToInt32(splitted[4]) - 1));
+                                //well.Connections.Capacity = well.Connections.Capacity + 1;
+                                well.Connections.Add(new Well.Connection(ii - 1, jj - 1, kk1 - 1, kk2 - 1));
                             }
+                            break;
                         }
                     counter = 0;
 
@@ -907,6 +914,7 @@ namespace Essence_graphics
                     if (splitted[0] == "/") { WS = false; curStr = sr.ReadLine(); continue; }
                     Wells.Capacity = Wells.Capacity + 1;
                     Well well = new Well();
+                    well.Connections = new List<Well.Connection>();
 
                     well.Name = splitted[0];
 
