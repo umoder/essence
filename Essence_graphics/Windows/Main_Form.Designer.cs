@@ -73,12 +73,16 @@
             this.Value = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.DrawContainer = new System.Windows.Forms.SplitContainer();
+            this.glc_map = new Essence_graphics.CustomGLControl();
             this.toolStrip1 = new System.Windows.Forms.ToolStrip();
             this.ButtonSwitchIJ = new System.Windows.Forms.ToolStripButton();
             this.HideIntersection = new System.Windows.Forms.ToolStripButton();
             this.Button_Cancel = new System.Windows.Forms.ToolStripButton();
             this.Button_OK = new System.Windows.Forms.ToolStripButton();
             this.Inter_Container = new System.Windows.Forms.SplitContainer();
+            this.glc_intersectionI = new Essence_graphics.CustomGLControl();
+            this.glc_intersectionJ = new Essence_graphics.CustomGLControl();
+            this.TV_boxes = new Essence_graphics.MultiSelectTreeView();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.duplicateToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.renameToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -88,10 +92,7 @@
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.deleteToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.toolTip1 = new System.Windows.Forms.ToolTip(this.components);
-            this.glc_map = new Essence_graphics.CustomGLControl();
-            this.glc_intersectionI = new Essence_graphics.CustomGLControl();
-            this.glc_intersectionJ = new Essence_graphics.CustomGLControl();
-            this.TV_boxes = new Essence_graphics.MultiSelectTreeView();
+            this.exportTxtToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.Menu1.SuspendLayout();
             this.TS1.SuspendLayout();
             this.StatusStrip.SuspendLayout();
@@ -139,6 +140,7 @@
             this.MenuFileNew,
             this.saveToolStripMenuItem,
             this.MenuFileSave,
+            this.exportTxtToolStripMenuItem,
             this.MenuFileExit});
             this.MenuFile.Name = "MenuFile";
             this.MenuFile.Size = new System.Drawing.Size(44, 24);
@@ -448,7 +450,7 @@
             // 
             this.splitContainer3.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer3.Location = new System.Drawing.Point(0, 0);
-            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.splitContainer3.Margin = new System.Windows.Forms.Padding(4);
             this.splitContainer3.Name = "splitContainer3";
             this.splitContainer3.Orientation = System.Windows.Forms.Orientation.Horizontal;
             // 
@@ -485,7 +487,7 @@
             this.dataGridProps.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGridProps.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;
             this.dataGridProps.Location = new System.Drawing.Point(0, 0);
-            this.dataGridProps.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.dataGridProps.Margin = new System.Windows.Forms.Padding(4);
             this.dataGridProps.MultiSelect = false;
             this.dataGridProps.Name = "dataGridProps";
             this.dataGridProps.RowHeadersWidth = 4;
@@ -555,6 +557,25 @@
             this.DrawContainer.SplitterDistance = 516;
             this.DrawContainer.TabIndex = 0;
             // 
+            // glc_map
+            // 
+            this.glc_map.BackColor = System.Drawing.Color.Black;
+            this.glc_map.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.glc_map.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glc_map.Location = new System.Drawing.Point(0, 0);
+            this.glc_map.Margin = new System.Windows.Forms.Padding(5);
+            this.glc_map.Name = "glc_map";
+            this.glc_map.Size = new System.Drawing.Size(724, 488);
+            this.glc_map.TabIndex = 2;
+            this.glc_map.VSync = false;
+            this.glc_map.Load += new System.EventHandler(this.glc_map_Load);
+            this.glc_map.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_map_Paint);
+            this.glc_map.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseDown);
+            this.glc_map.MouseEnter += new System.EventHandler(this.glc_map_MouseEnter);
+            this.glc_map.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseMove);
+            this.glc_map.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseUp);
+            this.glc_map.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseWheel);
+            // 
             // toolStrip1
             // 
             this.toolStrip1.AutoSize = false;
@@ -622,7 +643,7 @@
             this.Inter_Container.Dock = System.Windows.Forms.DockStyle.Fill;
             this.Inter_Container.IsSplitterFixed = true;
             this.Inter_Container.Location = new System.Drawing.Point(0, 0);
-            this.Inter_Container.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.Inter_Container.Margin = new System.Windows.Forms.Padding(4);
             this.Inter_Container.Name = "Inter_Container";
             // 
             // Inter_Container.Panel1
@@ -640,6 +661,61 @@
             this.Inter_Container.SplitterDistance = 360;
             this.Inter_Container.TabIndex = 0;
             this.Inter_Container.SizeChanged += new System.EventHandler(this.Main_Form_Resize);
+            // 
+            // glc_intersectionI
+            // 
+            this.glc_intersectionI.BackColor = System.Drawing.Color.Black;
+            this.glc_intersectionI.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.glc_intersectionI.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glc_intersectionI.ForeColor = System.Drawing.SystemColors.ControlText;
+            this.glc_intersectionI.Location = new System.Drawing.Point(3, 2);
+            this.glc_intersectionI.Margin = new System.Windows.Forms.Padding(5);
+            this.glc_intersectionI.Name = "glc_intersectionI";
+            this.glc_intersectionI.Size = new System.Drawing.Size(354, 168);
+            this.glc_intersectionI.TabIndex = 0;
+            this.glc_intersectionI.VSync = false;
+            this.glc_intersectionI.Load += new System.EventHandler(this.glc_intersection_Load);
+            this.glc_intersectionI.SizeChanged += new System.EventHandler(this.Main_Form_Resize);
+            this.glc_intersectionI.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_intersection_Paint);
+            this.glc_intersectionI.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseDown);
+            this.glc_intersectionI.MouseEnter += new System.EventHandler(this.glc_intersection_MouseEnter);
+            this.glc_intersectionI.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseMove);
+            this.glc_intersectionI.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseUp);
+            this.glc_intersectionI.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseWheel);
+            // 
+            // glc_intersectionJ
+            // 
+            this.glc_intersectionJ.BackColor = System.Drawing.Color.Black;
+            this.glc_intersectionJ.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.glc_intersectionJ.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.glc_intersectionJ.Location = new System.Drawing.Point(3, 2);
+            this.glc_intersectionJ.Margin = new System.Windows.Forms.Padding(5);
+            this.glc_intersectionJ.Name = "glc_intersectionJ";
+            this.glc_intersectionJ.Size = new System.Drawing.Size(354, 168);
+            this.glc_intersectionJ.TabIndex = 0;
+            this.glc_intersectionJ.VSync = false;
+            this.glc_intersectionJ.Load += new System.EventHandler(this.glc_intersectionJ_Load);
+            this.glc_intersectionJ.SizeChanged += new System.EventHandler(this.Main_Form_Resize);
+            this.glc_intersectionJ.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_intersectionJ_Paint);
+            this.glc_intersectionJ.MouseEnter += new System.EventHandler(this.glc_intersectionJ_MouseEnter);
+            this.glc_intersectionJ.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseWheel);
+            // 
+            // TV_boxes
+            // 
+            this.TV_boxes.AllowDrop = true;
+            this.TV_boxes.CheckBoxes = true;
+            this.TV_boxes.ContextMenuStrip = this.contextMenuStrip1;
+            this.TV_boxes.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.TV_boxes.Location = new System.Drawing.Point(0, 0);
+            this.TV_boxes.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.TV_boxes.Name = "TV_boxes";
+            this.TV_boxes.SelectedNodes = null;
+            this.TV_boxes.Size = new System.Drawing.Size(300, 692);
+            this.TV_boxes.TabIndex = 0;
+            this.TV_boxes.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.TV_boxes_AfterCheck);
+            this.TV_boxes.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TV_boxes_AfterSelect);
+            this.TV_boxes.DoubleClick += new System.EventHandler(this.TV_boxes_DoubleClick);
+            this.TV_boxes.MouseDown += new System.Windows.Forms.MouseEventHandler(this.TV_boxes_MouseDown);
             // 
             // contextMenuStrip1
             // 
@@ -700,79 +776,12 @@
             this.deleteToolStripMenuItem.Text = "Delete";
             this.deleteToolStripMenuItem.Click += new System.EventHandler(this.deleteToolStripMenuItem_Click);
             // 
-            // glc_map
+            // exportTxtToolStripMenuItem
             // 
-            this.glc_map.BackColor = System.Drawing.Color.Black;
-            this.glc_map.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.glc_map.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glc_map.Location = new System.Drawing.Point(0, 0);
-            this.glc_map.Margin = new System.Windows.Forms.Padding(5);
-            this.glc_map.Name = "glc_map";
-            this.glc_map.Size = new System.Drawing.Size(724, 488);
-            this.glc_map.TabIndex = 2;
-            this.glc_map.VSync = false;
-            this.glc_map.Load += new System.EventHandler(this.glc_map_Load);
-            this.glc_map.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_map_Paint);
-            this.glc_map.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseDown);
-            this.glc_map.MouseEnter += new System.EventHandler(this.glc_map_MouseEnter);
-            this.glc_map.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseMove);
-            this.glc_map.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseUp);
-            this.glc_map.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_map_MouseWheel);
-            // 
-            // glc_intersectionI
-            // 
-            this.glc_intersectionI.BackColor = System.Drawing.Color.Black;
-            this.glc_intersectionI.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.glc_intersectionI.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glc_intersectionI.ForeColor = System.Drawing.SystemColors.ControlText;
-            this.glc_intersectionI.Location = new System.Drawing.Point(3, 2);
-            this.glc_intersectionI.Margin = new System.Windows.Forms.Padding(5);
-            this.glc_intersectionI.Name = "glc_intersectionI";
-            this.glc_intersectionI.Size = new System.Drawing.Size(354, 168);
-            this.glc_intersectionI.TabIndex = 0;
-            this.glc_intersectionI.VSync = false;
-            this.glc_intersectionI.Load += new System.EventHandler(this.glc_intersection_Load);
-            this.glc_intersectionI.SizeChanged += new System.EventHandler(this.Main_Form_Resize);
-            this.glc_intersectionI.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_intersection_Paint);
-            this.glc_intersectionI.MouseDown += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseDown);
-            this.glc_intersectionI.MouseEnter += new System.EventHandler(this.glc_intersection_MouseEnter);
-            this.glc_intersectionI.MouseMove += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseMove);
-            this.glc_intersectionI.MouseUp += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseUp);
-            this.glc_intersectionI.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseWheel);
-            // 
-            // glc_intersectionJ
-            // 
-            this.glc_intersectionJ.BackColor = System.Drawing.Color.Black;
-            this.glc_intersectionJ.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.glc_intersectionJ.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.glc_intersectionJ.Location = new System.Drawing.Point(3, 2);
-            this.glc_intersectionJ.Margin = new System.Windows.Forms.Padding(5);
-            this.glc_intersectionJ.Name = "glc_intersectionJ";
-            this.glc_intersectionJ.Size = new System.Drawing.Size(354, 168);
-            this.glc_intersectionJ.TabIndex = 0;
-            this.glc_intersectionJ.VSync = false;
-            this.glc_intersectionJ.Load += new System.EventHandler(this.glc_intersectionJ_Load);
-            this.glc_intersectionJ.SizeChanged += new System.EventHandler(this.Main_Form_Resize);
-            this.glc_intersectionJ.Paint += new System.Windows.Forms.PaintEventHandler(this.glc_intersectionJ_Paint);
-            this.glc_intersectionJ.MouseEnter += new System.EventHandler(this.glc_intersectionJ_MouseEnter);
-            this.glc_intersectionJ.MouseWheel += new System.Windows.Forms.MouseEventHandler(this.glc_intersection_MouseWheel);
-            // 
-            // TV_boxes
-            // 
-            this.TV_boxes.AllowDrop = true;
-            this.TV_boxes.CheckBoxes = true;
-            this.TV_boxes.ContextMenuStrip = this.contextMenuStrip1;
-            this.TV_boxes.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.TV_boxes.Location = new System.Drawing.Point(0, 0);
-            this.TV_boxes.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.TV_boxes.Name = "TV_boxes";
-            this.TV_boxes.SelectedNodes = null;
-            this.TV_boxes.Size = new System.Drawing.Size(300, 692);
-            this.TV_boxes.TabIndex = 0;
-            this.TV_boxes.AfterCheck += new System.Windows.Forms.TreeViewEventHandler(this.TV_boxes_AfterCheck);
-            this.TV_boxes.AfterSelect += new System.Windows.Forms.TreeViewEventHandler(this.TV_boxes_AfterSelect);
-            this.TV_boxes.DoubleClick += new System.EventHandler(this.TV_boxes_DoubleClick);
-            this.TV_boxes.MouseDown += new System.Windows.Forms.MouseEventHandler(this.TV_boxes_MouseDown);
+            this.exportTxtToolStripMenuItem.Name = "exportTxtToolStripMenuItem";
+            this.exportTxtToolStripMenuItem.Size = new System.Drawing.Size(152, 24);
+            this.exportTxtToolStripMenuItem.Text = "Export txt";
+            this.exportTxtToolStripMenuItem.Click += new System.EventHandler(this.exportTxtToolStripMenuItem_Click);
             // 
             // Main_Form
             // 
@@ -889,6 +898,7 @@
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
         private System.Windows.Forms.ToolStripMenuItem setuoToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem saveToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem exportTxtToolStripMenuItem;
     }
 }
 

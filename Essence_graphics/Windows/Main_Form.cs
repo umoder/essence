@@ -2288,7 +2288,7 @@ namespace Essence_graphics
             if (!Model.IsInitialized) return;
             // TODO Read node, update table and enter the modification mode
             // Works only with Picker-Instrument
-            if (mode == 0)
+            if (mode == 0 && TV_boxes.SelectedNode != null)
             {
                 if (editingNode.node != null)
                 {
@@ -2345,6 +2345,11 @@ namespace Essence_graphics
                     e.SuppressKeyPress = true;
                     break;
             }
+        }
+
+        private void exportTxtToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            
         }
     }
 }

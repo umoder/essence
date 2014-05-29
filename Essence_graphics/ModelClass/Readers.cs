@@ -379,9 +379,10 @@ namespace Essence_graphics
                 }
                 if (!done) curStr = sr.ReadLine();
             } while (!done || curStr == null);
-            
-            sr.BaseStream.Position = sr.BaseStream.Position - curStr.Length - 5;
-            
+
+            sr.BaseStream.Position = GetActualPosition(sr);
+            sr.DiscardBufferedData();
+
             if (x != 0 || y != NJ + 1)
                 return false;
 
@@ -441,7 +442,7 @@ namespace Essence_graphics
             char ch;
             int j;
             long gap = sr.BaseStream.Position % buffLen;
-            num = sr.Read(buffer, 0, buffLen - Convert.ToInt32(gap));
+            num = sr.ReadBlock(buffer, 0, buffLen - Convert.ToInt32(gap));
             do
             {
                 for (j = 0; j < num; j++)
@@ -506,7 +507,7 @@ namespace Essence_graphics
                                     {
                                         y = 0;
                                         z++;
-                                        if (z == NK * 2) done = true; // 
+                                        //if (z == NK * 2) done = true; // 
                                         BW_Reader.ReportProgress(z * 100 / NK / 2);
                                     }
                                 }
@@ -545,13 +546,94 @@ namespace Essence_graphics
                     }
                     if (done) break;
                 }
-                if (!done) 
-                    num = sr.Read(buffer, 0, buffLen);
+                if (!done)
+                    num = sr.ReadBlock(buffer, 0, buffLen);
             } while (!done);
 
-            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
+            sr.BaseStream.Position = GetActualPosition(sr);
+            sr.DiscardBufferedData();
+
             if (x != 0 || y != 0 || z != NK * 2) return false; else return true;
         }
+        /*public bool ReadZCorn(ref StreamReader sr) // readline-variation. same bug, but work times slower!
+        {
+            string curStr;
+            string[] splitted;
+            int x = 0, y = 0, z = 0;
+            bool done = false;
+            double value;
+            int counter;
+            char[] emptySep={ };
+
+            curStr = sr.ReadLine();
+            splitted = curStr.Split(emptySep, StringSplitOptions.RemoveEmptyEntries);
+            while (splitted == null)
+            {
+                curStr = sr.ReadLine();
+                splitted = Splitter(curStr);
+            }
+
+            do
+            {
+                splitted = curStr.Split(emptySep, StringSplitOptions.RemoveEmptyEntries); ;
+                foreach (string str in splitted)
+                {
+                    if (str == "/")
+                    {
+                        done = true;
+                        break;
+                    }
+
+                    if (str.Contains("*"))
+                    {
+                        counter = Convert.ToInt32(str.Split('*')[0]);
+                        value = Convert.ToDouble(str.Split('*')[1]);
+                        if (value < 2000 || value > 3000)
+                            MessageBox.Show("shit");
+                        for (int i = 0; i < counter; i++)
+                        {
+                            zcorn[x, y, z] = value;
+                            x++;
+                            if (x == NI * 2)
+                            {
+                                x = 0; 
+                                y++;
+                                if (y == NJ * 2)
+                                {
+                                    y = 0;
+                                    z++;
+                                    BW_Reader.ReportProgress((int)(z * 100 / NK));
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        value = Convert.ToDouble(str);
+                        if (value < 2000 || value > 3000)
+                            MessageBox.Show("shit");
+                        zcorn[x, y, z] = Convert.ToDouble(str);
+                        x++;
+                        if (x == NI * 2)
+                        {
+                            x = 0; 
+                            y++;
+                            if (y == NJ * 2)
+                            {
+                                y = 0;
+                                z++;
+                                BW_Reader.ReportProgress((int)(z * 100 / NK / 2));
+                            }
+                        }
+                    }
+                }
+                curStr = sr.ReadLine();
+            } while (!done);
+            if (x != 0 || y != 0 || z != NK * 2)
+                return false;
+            else
+                return true;
+        }*/
 
         /// <summary>
         /// Метод считывания куба ACTNUM
@@ -661,7 +743,8 @@ namespace Essence_graphics
                 }
             } while (!done);
 
-            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
+            sr.BaseStream.Position = GetActualPosition(sr);
+            sr.DiscardBufferedData();
 
             if (x != 0 || y != 0 || z != NK)
             {
@@ -820,7 +903,8 @@ namespace Essence_graphics
                 return false;
             }
 
-            sr.BaseStream.Position = sr.BaseStream.Position - (num - j + 1);
+            sr.BaseStream.Position = GetActualPosition(sr);
+            sr.DiscardBufferedData();
 
             if (Props == null)
                 Props = new List<DProperty>();
@@ -983,6 +1067,29 @@ namespace Essence_graphics
             Reduce = new CReduce(this);
             Restore = new CRestore(this);
             Picker = new CPicker(this);
+        }
+
+        public long GetActualPosition(StreamReader reader)
+        {
+            // The current buffer of decoded characters
+            char[] charBuffer = (char[])reader.GetType().InvokeMember("charBuffer"
+                , System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.GetField
+                , null, reader, null);
+
+            // The current position in the buffer of decoded characters
+            int charPos = (int)reader.GetType().InvokeMember("charPos"
+                , System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.GetField
+                , null, reader, null);
+
+            // The number of bytes that the already-read characters need when encoded.
+            int numReadBytes = reader.CurrentEncoding.GetByteCount(charBuffer, 0, charPos);
+
+            // The number of encoded bytes that are in the current buffer
+            int byteLen = (int)reader.GetType().InvokeMember("byteLen"
+                , System.Reflection.BindingFlags.DeclaredOnly | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.GetField
+                , null, reader, null);
+
+            return reader.BaseStream.Position - byteLen + numReadBytes;
         }
     }
 }
